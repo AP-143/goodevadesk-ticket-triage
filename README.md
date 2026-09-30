@@ -11,7 +11,7 @@ cp .env.example .env        # then set GEMINI_API_KEY in .env (optional, see bel
 docker compose up --build
 ```
 
-The API listens on `http://localhost:3000`. On start the container applies migrations and seeds two organizations.
+The API listens on `http://localhost:3000`. On start, compose applies migrations and seeds the two dev organizations. The Postgres credentials in `docker-compose.yml` are for local development only.
 
 Without `GEMINI_API_KEY` everything still works: tickets are saved with `category` and `suggested_reply` set to `null`.
 
@@ -89,7 +89,7 @@ curl -X POST http://localhost:3000/tickets \
 }
 ```
 
-Errors: `401` missing or invalid API key, `400` invalid input (including unknown fields), `404` ticket not found **or owned by another organization**.
+Errors: `401` missing or invalid API key, `400` invalid input (including unknown fields, a non-UUID `:id`, and invalid `status` or `category` values), `404` ticket not found **or owned by another organization**.
 
 ## Design decisions
 
@@ -135,7 +135,7 @@ User content:
 </ticket>
 ```
 
-Response schema: `{ "category": "billing" | "technical" | "general", "suggested_reply": string }`, both required. Temperature `0.2`.
+Response schema: `{ "category": "billing" | "technical" | "general", "suggested_reply": string }`, both required. Temperature is left at the model default (1.0), as Google recommends for Gemini 3 models.
 
 ### LLM call flow and error handling
 
@@ -157,7 +157,7 @@ The LLM never touches `status`, so a ticket cannot get stuck in an intermediate 
 
 ### Data model
 
-- `organizations(id, name, api_key_hash)`: the spec's `api_key` is stored as a SHA-256 hash, so a database leak does not leak usable keys. Keys are high-entropy, so a fast unsalted hash keeps the lookup a single indexed query.
+- `organizations(id, name, api_key_hash)`: the spec's `api_key` is stored as a SHA-256 hash, so a database leak does not leak usable keys. Keys are expected to be high-entropy random strings (issuing them is future work; the seeded keys are dev-only), which is why a fast unsalted hash is enough and keeps the lookup a single indexed query.
 - `tickets(id, organization_id, customer_email, subject, message, category, suggested_reply, status, created_at)`: `category` and `status` are PostgreSQL enums, so invalid values are rejected by the database. Index on `(organization_id, created_at)` serves the org-scoped, newest-first list.
 
 ### Redis caching
@@ -171,7 +171,7 @@ The LLM never touches `status`, so a ticket cannot get stuck in an intermediate 
 
 ## What I would improve with more time
 
-- Move triage to a queue (BullMQ on the existing Redis) so `POST /tickets` responds immediately and retries use backoff outside the request.
+- Move triage to a queue (BullMQ on the existing Redis) so `POST /tickets` responds immediately and retries use backoff outside the request. The synchronous call can take about 20 s in the worst case (10 s timeout x 2 attempts), so a client that times out and retries can create a duplicate ticket; an idempotency key would prevent that.
 - Cursor pagination for `GET /tickets` (currently capped at 50).
 - Organization management and API key rotation endpoints.
 - Semantic cache (embeddings plus vector search) for tickets that are similar in meaning, not only in text.
