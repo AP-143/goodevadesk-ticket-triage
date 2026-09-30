@@ -1,6 +1,10 @@
 import { normalizeTicketText, triageCacheKey } from './cache-key.js';
 
 describe('normalizeTicketText', () => {
+  it('keeps punctuation as a word boundary', () => {
+    expect(normalizeTicketText('order 12-34', 'x')).toBe('order 12 34 x');
+  });
+
   it('lowercases, strips punctuation, and collapses whitespace', () => {
     expect(normalizeTicketText('  Refund, please!! ', 'I was\n\ncharged   TWICE.')).toBe(
       'refund please i was charged twice',
@@ -28,6 +32,12 @@ describe('triageCacheKey', () => {
   it('differs when the words differ', () => {
     expect(triageCacheKey('org-1', 'Refund please', 'charged twice')).not.toBe(
       triageCacheKey('org-1', 'Refund please', 'charged once'),
+    );
+  });
+
+  it('differs when punctuation separates different numbers', () => {
+    expect(triageCacheKey('org-1', 'Charge', '$1.50')).not.toBe(
+      triageCacheKey('org-1', 'Charge', '$150'),
     );
   });
 
