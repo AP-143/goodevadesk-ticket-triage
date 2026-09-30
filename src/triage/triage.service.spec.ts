@@ -31,9 +31,9 @@ describe('TriageService', () => {
     const { redis, gemini, service } = setup();
     redis.get.mockResolvedValue(VALID_JSON);
 
-    await expect(service.triage('org-1', 'Login', 'Cannot sign in')).resolves.toEqual(
-      VALID_RESULT,
-    );
+    await expect(
+      service.triage('org-1', 'Login', 'Cannot sign in'),
+    ).resolves.toEqual(VALID_RESULT);
     expect(redis.get).toHaveBeenCalledWith(KEY);
     expect(gemini.complete).not.toHaveBeenCalled();
   });
@@ -41,18 +41,27 @@ describe('TriageService', () => {
   it('calls Gemini on a cache miss and caches the valid result', async () => {
     const { redis, gemini, service } = setup();
 
-    await expect(service.triage('org-1', 'Login', 'Cannot sign in')).resolves.toEqual(
-      VALID_RESULT,
-    );
+    await expect(
+      service.triage('org-1', 'Login', 'Cannot sign in'),
+    ).resolves.toEqual(VALID_RESULT);
     expect(gemini.complete).toHaveBeenCalledTimes(1);
-    expect(redis.set).toHaveBeenCalledWith(KEY, VALID_JSON, 'EX', TRIAGE_CACHE_TTL_SECONDS);
+    expect(redis.set).toHaveBeenCalledWith(
+      KEY,
+      VALID_JSON,
+      'EX',
+      TRIAGE_CACHE_TTL_SECONDS,
+    );
   });
 
   it('returns null and does not cache an invalid response', async () => {
     const { redis, gemini, service } = setup();
-    gemini.complete.mockResolvedValue('{"category":"sales","suggested_reply":"Hi"}');
+    gemini.complete.mockResolvedValue(
+      '{"category":"sales","suggested_reply":"Hi"}',
+    );
 
-    await expect(service.triage('org-1', 'Login', 'Cannot sign in')).resolves.toBeNull();
+    await expect(
+      service.triage('org-1', 'Login', 'Cannot sign in'),
+    ).resolves.toBeNull();
     expect(redis.set).not.toHaveBeenCalled();
   });
 
@@ -60,7 +69,9 @@ describe('TriageService', () => {
     const { redis, gemini, service } = setup();
     gemini.complete.mockRejectedValue(new Error('Request timed out'));
 
-    await expect(service.triage('org-1', 'Login', 'Cannot sign in')).resolves.toBeNull();
+    await expect(
+      service.triage('org-1', 'Login', 'Cannot sign in'),
+    ).resolves.toBeNull();
     expect(redis.set).not.toHaveBeenCalled();
   });
 
@@ -68,9 +79,9 @@ describe('TriageService', () => {
     const { redis, gemini, service } = setup();
     redis.get.mockRejectedValue(new Error('ECONNREFUSED'));
 
-    await expect(service.triage('org-1', 'Login', 'Cannot sign in')).resolves.toEqual(
-      VALID_RESULT,
-    );
+    await expect(
+      service.triage('org-1', 'Login', 'Cannot sign in'),
+    ).resolves.toEqual(VALID_RESULT);
     expect(gemini.complete).toHaveBeenCalledTimes(1);
   });
 
@@ -78,8 +89,8 @@ describe('TriageService', () => {
     const { redis, service } = setup();
     redis.set.mockRejectedValue(new Error('ECONNREFUSED'));
 
-    await expect(service.triage('org-1', 'Login', 'Cannot sign in')).resolves.toEqual(
-      VALID_RESULT,
-    );
+    await expect(
+      service.triage('org-1', 'Login', 'Cannot sign in'),
+    ).resolves.toEqual(VALID_RESULT);
   });
 });

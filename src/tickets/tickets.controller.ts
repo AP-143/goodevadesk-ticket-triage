@@ -54,6 +54,8 @@ export class TicketsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateTicketStatusDto,
   ): Promise<TicketResponse> {
-    return toTicketResponse(await this.tickets.updateStatus(org.id, id, dto.status));
+    return toTicketResponse(
+      await this.tickets.updateStatus(org.id, id, dto.status),
+    );
   }
 }

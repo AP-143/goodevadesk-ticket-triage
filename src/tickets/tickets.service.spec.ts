@@ -24,7 +24,10 @@ function setup(triageResult: unknown) {
   const prisma = {
     ticket: {
       create: vi.fn().mockResolvedValue(SAVED),
-      update: vi.fn(async ({ data }: { data: object }) => ({ ...SAVED, ...data })),
+      update: vi.fn(async ({ data }: { data: object }) => ({
+        ...SAVED,
+        ...data,
+      })),
     },
   };
   const triage = { triage: vi.fn().mockResolvedValue(triageResult) };
@@ -49,7 +52,11 @@ describe('TicketsService.create', () => {
         message: DTO.message,
       },
     });
-    expect(triage.triage).toHaveBeenCalledWith('org-1', DTO.subject, DTO.message);
+    expect(triage.triage).toHaveBeenCalledWith(
+      'org-1',
+      DTO.subject,
+      DTO.message,
+    );
   });
 
   it('keeps the ticket open with null triage fields when triage fails', async () => {
@@ -60,7 +67,10 @@ describe('TicketsService.create', () => {
   });
 
   it('stores the triage result, scoped to the organization', async () => {
-    const { prisma, service } = setup({ category: 'billing', suggestedReply: 'Hi' });
+    const { prisma, service } = setup({
+      category: 'billing',
+      suggestedReply: 'Hi',
+    });
 
     const ticket = await service.create('org-1', DTO);
 
@@ -68,11 +78,18 @@ describe('TicketsService.create', () => {
       where: { id: 'ticket-1', organizationId: 'org-1' },
       data: { category: 'billing', suggestedReply: 'Hi' },
     });
-    expect(ticket).toMatchObject({ category: 'billing', suggestedReply: 'Hi', status: 'open' });
+    expect(ticket).toMatchObject({
+      category: 'billing',
+      suggestedReply: 'Hi',
+      status: 'open',
+    });
   });
 
   it('returns the saved ticket when storing the triage result fails', async () => {
-    const { prisma, service } = setup({ category: 'billing', suggestedReply: 'Hi' });
+    const { prisma, service } = setup({
+      category: 'billing',
+      suggestedReply: 'Hi',
+    });
     prisma.ticket.update.mockRejectedValue(new Error('connection lost'));
 
     await expect(service.create('org-1', DTO)).resolves.toEqual(SAVED);

@@ -36,16 +36,24 @@ export const TRIAGE_RESPONSE_SCHEMA: Record<string, unknown> = {
 
 // Escape markup so ticket text cannot close the wrapper tags.
 function escapeXml(text: string): string {
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
-export function buildTriageUserContent(subject: string, message: string): string {
+export function buildTriageUserContent(
+  subject: string,
+  message: string,
+): string {
   return `<ticket>\n<subject>${escapeXml(subject)}</subject>\n<message>${escapeXml(message)}</message>\n</ticket>`;
 }
 
 // The model is asked for JSON via a response schema, but its output is still
 // untrusted: validate every field before it reaches the database.
-export function parseTriageResponse(raw: string | undefined): TriageResult | null {
+export function parseTriageResponse(
+  raw: string | undefined,
+): TriageResult | null {
   if (!raw) return null;
 
   let data: unknown;
@@ -59,7 +67,8 @@ export function parseTriageResponse(raw: string | undefined): TriageResult | nul
   }
 
   const { category, suggested_reply: reply } = data as Record<string, unknown>;
-  if (typeof category !== 'string' || !CATEGORIES.includes(category)) return null;
+  if (typeof category !== 'string' || !CATEGORIES.includes(category))
+    return null;
   if (typeof reply !== 'string' || reply.trim() === '') return null;
 
   return { category: category as TicketCategory, suggestedReply: reply.trim() };

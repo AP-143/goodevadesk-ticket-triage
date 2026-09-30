@@ -35,8 +35,12 @@ describe('Tenant isolation (e2e)', () => {
 
     prisma = app.get(PrismaService);
     const [orgA, orgB] = await Promise.all([
-      prisma.organization.create({ data: { name: 'E2E Org A', apiKeyHash: hashApiKey(keyA) } }),
-      prisma.organization.create({ data: { name: 'E2E Org B', apiKeyHash: hashApiKey(keyB) } }),
+      prisma.organization.create({
+        data: { name: 'E2E Org A', apiKeyHash: hashApiKey(keyA) },
+      }),
+      prisma.organization.create({
+        data: { name: 'E2E Org B', apiKeyHash: hashApiKey(keyB) },
+      }),
     ]);
     orgAId = orgA.id;
     orgBId = orgB.id;
@@ -55,7 +59,9 @@ describe('Tenant isolation (e2e)', () => {
 
   afterAll(async () => {
     const orgIds = [orgAId, orgBId];
-    await prisma.ticket.deleteMany({ where: { organizationId: { in: orgIds } } });
+    await prisma.ticket.deleteMany({
+      where: { organizationId: { in: orgIds } },
+    });
     await prisma.organization.deleteMany({ where: { id: { in: orgIds } } });
     await app.close();
   });
@@ -65,7 +71,10 @@ describe('Tenant isolation (e2e)', () => {
   });
 
   it('rejects an unknown API key', async () => {
-    await request(app.getHttpServer()).get('/tickets').set('x-api-key', 'wrong-key').expect(401);
+    await request(app.getHttpServer())
+      .get('/tickets')
+      .set('x-api-key', 'wrong-key')
+      .expect(401);
   });
 
   it('returns the created ticket with triage fields in snake_case', async () => {
@@ -150,7 +159,9 @@ describe('Tenant isolation (e2e)', () => {
       .get('/tickets?status=closed')
       .set('x-api-key', keyA)
       .expect(200);
-    expect(closed.body.map((t: { id: string }) => t.id)).not.toContain(ticketId);
+    expect(closed.body.map((t: { id: string }) => t.id)).not.toContain(
+      ticketId,
+    );
   });
 
   it('rejects an invalid status value', async () => {

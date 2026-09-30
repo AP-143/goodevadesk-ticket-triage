@@ -32,23 +32,40 @@ export class TicketsService {
       },
     });
 
-    const result = await this.triage.triage(organizationId, dto.subject, dto.message);
+    const result = await this.triage.triage(
+      organizationId,
+      dto.subject,
+      dto.message,
+    );
     if (!result) return ticket;
 
     try {
       return await this.prisma.ticket.update({
         where: { id: ticket.id, organizationId },
-        data: { category: result.category, suggestedReply: result.suggestedReply },
+        data: {
+          category: result.category,
+          suggestedReply: result.suggestedReply,
+        },
       });
     } catch (error) {
-      this.logger.error(`Failed to store triage for ticket ${ticket.id}`, error);
+      this.logger.error(
+        `Failed to store triage for ticket ${ticket.id}`,
+        error,
+      );
       return ticket;
     }
   }
 
-  findAll(organizationId: string, filter: ListTicketsQueryDto): Promise<Ticket[]> {
+  findAll(
+    organizationId: string,
+    filter: ListTicketsQueryDto,
+  ): Promise<Ticket[]> {
     return this.prisma.ticket.findMany({
-      where: { organizationId, status: filter.status, category: filter.category },
+      where: {
+        organizationId,
+        status: filter.status,
+        category: filter.category,
+      },
       orderBy: { createdAt: 'desc' },
       take: LIST_LIMIT,
     });

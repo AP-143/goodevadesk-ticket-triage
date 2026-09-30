@@ -22,7 +22,11 @@ describe('validateEnv', () => {
   });
 
   it('treats blank optional values as unset', () => {
-    const env = validateEnv({ ...required, GEMINI_API_KEY: '  ', GEMINI_MODEL: '' });
+    const env = validateEnv({
+      ...required,
+      GEMINI_API_KEY: '  ',
+      GEMINI_MODEL: '',
+    });
     expect(env.GEMINI_API_KEY).toBeUndefined();
     expect(env.GEMINI_MODEL).toBe(DEFAULT_GEMINI_MODEL);
   });
