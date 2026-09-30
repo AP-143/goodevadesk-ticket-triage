@@ -1,0 +1,45 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TicketStatus {
+  open
+  in_progress
+  closed
+}
+
+enum TicketCategory {
+  billing
+  technical
+  general
+}
+
+model Organization {
+  id         String   @id @default(uuid())
+  name       String
+  apiKeyHash String   @unique @map("api_key_hash")
+  tickets    Ticket[]
+
+  @@map("organizations")
+}
+
+model Ticket {
+  id             String          @id @default(uuid())
+  organizationId String          @map("organization_id")
+  customerEmail  String          @map("customer_email")
+  subject        String
+  message        String
+  category       TicketCategory?
+  suggestedReply String?         @map("suggested_reply")
+  status         TicketStatus    @default(open)
+  createdAt      DateTime        @default(now()) @map("created_at")
+  organization   Organization    @relation(fields: [organizationId], references: [id])
+
+  @@index([organizationId, createdAt])
+  @@map("tickets")
+}
