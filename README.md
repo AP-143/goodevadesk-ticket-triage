@@ -135,6 +135,37 @@ Response schema: `{ "category": "billing" | "technical" | "general", "suggested_
 
 ## Design decisions
 
+### Request flow
+
+```mermaid
+flowchart TD
+  A(["Request with x-api-key"]) --> B{{"Valid API key?<br/>ApiKeyGuard, SHA-256 lookup"}}
+  B -- no --> E401["401 Unauthorized"]
+  B -- yes --> C{{"Valid input?<br/>ValidationPipe + DTO"}}
+  C -- no --> E400["400 Bad Request"]
+  C -- yes --> D{{"Endpoint"}}
+
+  D -- "GET /tickets" --> L["List the organization's tickets<br/>newest first, max 50"]
+  D -- "GET /tickets/:id<br/>PATCH /tickets/:id/status" --> F{{"Owned by this organization?<br/>where id + organizationId"}}
+  F -- no --> E404["404 Not Found"]
+  F -- yes --> OK
+  L --> OK
+
+  D -- "POST /tickets" --> S["Save ticket first<br/>category and reply null, status open"]
+  S --> K{{"Cache hit?<br/>Redis llm:v1:org:hash"}}
+  K -- yes --> U
+  K -- "no, or Redis down" --> G{{"Call Gemini<br/>10 s timeout, 1 retry"}}
+  G -- "timeout, rate limit, error" --> N["Keep category and reply null"]
+  G -- response --> V{{"Valid output?<br/>JSON, known category, non-empty reply"}}
+  V -- no --> N
+  V -- yes --> W["Cache result for 7 days"]
+  W --> U["Update ticket with category and reply"]
+  U --> OK
+  N --> OK
+
+  OK(["200 / 201 response"])
+```
+
 ### LLM error handling
 
 `POST /tickets` is synchronous:
