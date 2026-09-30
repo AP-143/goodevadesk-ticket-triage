@@ -34,8 +34,13 @@ export const TRIAGE_RESPONSE_SCHEMA: Record<string, unknown> = {
   required: ['category', 'suggested_reply'],
 };
 
+// Escape markup so ticket text cannot close the wrapper tags.
+function escapeXml(text: string): string {
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
 export function buildTriageUserContent(subject: string, message: string): string {
-  return `<ticket>\n<subject>${subject}</subject>\n<message>${message}</message>\n</ticket>`;
+  return `<ticket>\n<subject>${escapeXml(subject)}</subject>\n<message>${escapeXml(message)}</message>\n</ticket>`;
 }
 
 // The model is asked for JSON via a response schema, but its output is still
