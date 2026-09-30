@@ -1,0 +1,5 @@
+gliner==0.2.29
+transformers==5.16.1
+torch==2.14.0
+sentencepiece==0.2.2
+protobuf==7.36.2

@@ -165,6 +165,41 @@ The LLM never changes `status`, so a ticket cannot get stuck.
 - Only valid results are cached. A Redis outage is a cache miss, not an error (500 ms command timeout).
 - Bump `v1` when the prompt or schema changes.
 
+## Part D: NLP comparison (Python)
+
+[`nlp/triage_compare.py`](nlp/triage_compare.py) reads an organization's triaged tickets through the API and, for each ticket:
+
+- Classifies it with a local multilingual zero-shot NLI model (`MoritzLaurer/mDeBERTa-v3-base-mnli-xnli`) and compares the result with the Gemini category.
+- Extracts emails, phone numbers, and invoice/order numbers with GLiNER (`urchade/gliner_multi_pii-v1`).
+
+It uses the API, not the database, so it stays scoped to one organization.
+
+```bash
+cd nlp
+python -m venv .venv
+.venv/Scripts/activate      # Windows; on Linux/macOS: source .venv/bin/activate
+pip install -r requirements.txt
+python triage_compare.py --seed    # --seed creates the 12 tickets in sample_tickets.json first
+```
+
+The first run downloads about 1.7 GB of models. Options: `--url` (default `http://localhost:3000`), `--api-key` (default Acme).
+
+Result on the sample tickets:
+
+```
+[same] llm=billing   nli=billing   Charged twice
+       entities: invoice number: INV-2291; phone number: +1 415 555 0132
+[same] llm=technical nli=technical Tidak bisa login
+       entities: phone number: 0812-3456-7890
+[DIFF] llm=technical nli=billing   Password reset email never arrives
+[DIFF] llm=technical nli=general   Dashboard very slow
+       entities: email: john.miller@example.com
+...
+Agreement: 8/12 (67%)
+```
+
+The NLI model matches on keywords: "cannot pay my overdue invoice" becomes billing, although the problem is a missing reset email. Gemini reads the context and gets these cases right, so it stays the main classifier. The local model is a free baseline to flag disagreements for review.
+
 ## With more time
 
 - Run triage in a queue (BullMQ) so `POST /tickets` returns immediately. Add an idempotency key against duplicate tickets from client retries.
