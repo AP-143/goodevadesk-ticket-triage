@@ -33,7 +33,7 @@ export class GeminiClient {
         systemInstruction: request.systemInstruction,
         responseMimeType: 'application/json',
         responseJsonSchema: request.responseJsonSchema,
-        temperature: 0.2,
+        // Temperature is left at the model default, as Google recommends for Gemini 3 models.
         httpOptions: {
           // Timeout applies per attempt. The SDK retries 408, 429, and 5xx
           // responses; 2 attempts = 1 retry after about 1 second.
