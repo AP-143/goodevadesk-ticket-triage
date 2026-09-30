@@ -27,6 +27,8 @@ services:
 
   app:
     build: .
+    # Migrations and the dev seed run on start, for local use only.
+    command: sh -c "npx prisma migrate deploy && npx prisma db seed && node dist/main.js"
     ports:
       - '3000:3000'
     environment:

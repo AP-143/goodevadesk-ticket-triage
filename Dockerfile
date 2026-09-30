@@ -1,14 +1,17 @@
 FROM node:24-alpine
-WORKDIR /app
 
 # Prisma's schema engine needs OpenSSL on Alpine.
 RUN apk add --no-cache openssl
 
-COPY package.json package-lock.json ./
+WORKDIR /app
+RUN chown node:node /app
+USER node
+
+COPY --chown=node:node package.json package-lock.json ./
 RUN npm ci
 
-COPY . .
+COPY --chown=node:node . .
 RUN npx prisma generate && npm run build
 
 EXPOSE 3000
-CMD ["sh", "-c", "npx prisma migrate deploy && npx prisma db seed && node dist/main.js"]
+CMD ["node", "dist/main.js"]
